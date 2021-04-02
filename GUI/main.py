@@ -1,53 +1,7 @@
 # Ryan Tumbleson
-def load_npy_data(path):
-    '''loads all of the files from the path with the extension .npy and returns them in an ordered dictionary.
-        Shape of magnetization data is (3 m vectors, z dim, y dim, x dim)'''
-    import glob
-    import os
-    import numpy as np
-    from collections import OrderedDict
-
-    np_vars = OrderedDict()
-    print('File(s) loaded:')
-    for np_name in glob.glob(path + '*.npy'):
-        print(np_name)
-        base = os.path.basename(np_name)
-        fname = os.path.splitext(base)[0]
-        np_vars[fname] = np.load(np_name, 'r')
-    return sort_dictionary(np_vars)
 
 
-def append_npy_data(dict_, path):
-    '''loads all of the files from the path with the extension .npy and appends them to the given ordered dictionary.
-        Shape of magnetization data is (3 m vectors, x dim, y dim, z dim)
-    '''
-    import glob
-    import numpy as np
-
-    print('File(s) loaded:')
-    for np_name in glob.glob(path + '*.npy'):
-        print(np_name)
-        val = '%06d' % (int(list(dict_)[-1][1:]) + 1)
-        dict_['m' + val] = np.lib.format.open_memmap(np_name)
-    return dict_
-
-
-def sort_dictionary(dict_):
-    '''Sorts a dictionary based on the key'''
-    from collections import OrderedDict
-
-    return OrderedDict(sorted(dict_.items()))
-
-
-def read_mumax3_table(filename):
-    """Puts the mumax3 output table in a pandas dataframe"""
-    from pandas import read_table
-
-    table = read_table(filename)
-    table.columns = ' '.join(table.columns).split()[1::2]
-    return table
-
-
+from mumax_helper_func import *
 from traits.api import HasTraits, Range, Dict, List, Instance, Button, \
         on_trait_change
 from traitsui.api import View, Item, Group, HSplit
@@ -69,7 +23,7 @@ class VectorCuts(HasTraits):
     X = Range(0, 512, 256, mode='slider')
     Y = Range(0, 512, 256, mode='slider')
     Z = Range(0, 33, 10, mode='slider')
-    t = Range(0, 100, 0, mode='slider')
+    t = Range(0, 1000, 0, mode='slider')
     camX = Range(-1000, 1000, 256, mode='slider')
     camY = Range(-1000, 1000, 256, mode='slider')
     camZ = Range(-1000, 1000, 0, mode='slider')
@@ -119,6 +73,8 @@ class VectorCuts(HasTraits):
 
     @on_trait_change('t')
     def update_time(self):
+        if self.t > len(self.keys):
+            self.t = len(self.keys)-1
         self.plotx.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
         self.ploty.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
