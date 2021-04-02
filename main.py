@@ -1,4 +1,4 @@
-# Helper functions
+# Ryan Tumbleson
 def load_npy_data(path):
     '''loads all of the files from the path with the extension .npy and returns them in an ordered dictionary.
         Shape of magnetization data is (3 m vectors, z dim, y dim, x dim)'''
