@@ -37,7 +37,6 @@ class VectorCuts(HasTraits):
     t = Range(0, 'time_steps', 0, mode='slider')
     camX = Range(-1000, 1000, 256, mode='slider')
     camY = Range(-1000, 1000, 256, mode='slider')
-    camZ = Range(-1000, 1000, 0, mode='slider')
     resetCam = Button(label='Reset Camera')
 
     # modules
@@ -93,11 +92,11 @@ class VectorCuts(HasTraits):
 
     @on_trait_change('X, Y, Z, camX, camY, camZ')
     def update_plot(self):
-        self.plotx.implicit_plane.plane.origin = (self.X, self.camY, self.camZ)
-        self.ploty.implicit_plane.plane.origin = (self.camX, self.Y, self.camZ)
+        self.plotx.implicit_plane.plane.origin = (self.X, self.camY, 0)
+        self.ploty.implicit_plane.plane.origin = (self.camX, self.Y, 0)
         self.plotz.implicit_plane.plane.origin = (self.camX, self.camY, self.Z)
 
-        self.scene.mlab.view(focalpoint=(self.camX, self.camY, self.camZ))
+        self.scene.mlab.view(focalpoint=(self.camX, self.camY, 0))
 
     @on_trait_change('t')
     def update_time(self):
@@ -115,7 +114,6 @@ class VectorCuts(HasTraits):
         self.scene.mlab.view(focalpoint=(256, 256, 0))
         self.camX = 256
         self.camY = 256
-        self.camZ = 0
 
     def make_all_plots_nice(self):
         # remove large border around cut plane
@@ -147,7 +145,6 @@ class VectorCuts(HasTraits):
             Item('t'),
             Item('camX'),
             Item('camY'),
-            Item('camZ'),
             Item('resetCam', show_label=False)
         ),
     ),
