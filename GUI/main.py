@@ -3,7 +3,7 @@
 
 from mumax_helper_func import *
 from traits.api import HasTraits, Range, Dict, List, Instance, Button, \
-        on_trait_change
+        on_trait_change, Property, cached_property
 from traitsui.api import View, Item, Group, HSplit
 
 from mayavi import mlab
@@ -12,18 +12,24 @@ from mayavi.core.ui.api import MayaviScene, SceneEditor, \
                 MlabSceneModel
 
 
+class DataContainer(HasTraits):
+    min = 0
+    max = 100
+
 class VectorCuts(HasTraits):
     # force the data to be a dictionary
     data = Dict()
     keys = List()
+    timeSteps = Property(depends_on='data')
+
     # set up the scene to be viewed
     scene = Instance(MlabSceneModel, ())
 
     # Sliders
-    X = Range(0, 512, 256, mode='slider')
+    X = Range(0, 512, 0, mode='slider')
     Y = Range(0, 512, 256, mode='slider')
     Z = Range(0, 33, 10, mode='slider')
-    t = Range(0, 1000, 0, mode='slider')
+    t = Range(0, 'timeSteps', 0, mode='slider')
     camX = Range(-1000, 1000, 256, mode='slider')
     camY = Range(-1000, 1000, 256, mode='slider')
     camZ = Range(-1000, 1000, 0, mode='slider')
@@ -58,6 +64,11 @@ class VectorCuts(HasTraits):
 
     def _plotz_default(self):
         return self.make_cut('z')
+
+        # Property implementations:
+    @cached_property
+    def _get_timeSteps(self):
+        return len(self.keys)-1
 
     @on_trait_change('scene.activated')
     def display_scene(self):
@@ -133,4 +144,3 @@ if __name__ == '__main__':
 
     vc = VectorCuts(data=dataDict)
     vc.configure_traits()
-
