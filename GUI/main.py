@@ -87,22 +87,24 @@ class VectorCuts(HasTraits):
 
     @on_trait_change('X, Y, Z, camX, camY, camZ')
     def update_plot(self):
+        self.scene.disable_render = True
         self.plotx.implicit_plane.plane.origin = (self.X, self.camY, 0)
         self.ploty.implicit_plane.plane.origin = (self.camX, self.Y, 0)
         self.plotz.implicit_plane.plane.origin = (self.camX, self.camY, self.Z)
 
         self.scene.mlab.view(focalpoint=(self.camX, self.camY, 0))
+        self.scene.disable_render = False
 
     @on_trait_change('t')
     def update_time(self):
-        if self.t > len(self.keys):
-            self.t = len(self.keys)-1
+        self.scene.disable_render = True
         self.plotx.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
         self.ploty.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
         self.plotz.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
+        self.scene.disable_render = False
 
     @on_trait_change('resetCam')
     def reset_camera(self):
