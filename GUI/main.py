@@ -12,11 +12,6 @@ from mayavi.core.api import PipelineBase, Source
 from mayavi.core.ui.api import MayaviScene, SceneEditor, \
                 MlabSceneModel
 
-
-class DataContainer(HasTraits):
-    min = 0
-    max = 100
-
 class VectorCuts(HasTraits):
     # force the data to be a dictionary
     data = Dict()
