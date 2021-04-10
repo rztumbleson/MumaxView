@@ -1,6 +1,5 @@
 # Ryan Tumbleson
 import PyQt5
-import zarr
 import numpy as np
 
 from mumax_helper_func import *
@@ -21,7 +20,6 @@ class VectorCuts(HasTraits):
     dim_x = Property(depends_on='data')
     dim_y = Property(depends_on='data')
     dim_z = Property(depends_on='data')
-    dimensions = Property(depends_on='data')
 
     # set up the scene to be viewed
     scene = Instance(MlabSceneModel, ())
@@ -96,10 +94,8 @@ class VectorCuts(HasTraits):
 
     @on_trait_change('t')
     def update_time(self):
-        # Only need to update one plot since they share the same data source
-        self.plotx.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
+        self.vector_field_src.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
-
 
     @on_trait_change('resetCam')
     def reset_camera(self):
@@ -108,6 +104,7 @@ class VectorCuts(HasTraits):
         self.camY = 256
 
     def make_all_plots_nice(self):
+        self.scene.scene.anti_aliasing_frames = 0
         # remove large border around cut plane
         self.plotx.implicit_plane.widget.enabled = False
         self.ploty.implicit_plane.widget.enabled = False
