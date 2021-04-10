@@ -1,5 +1,6 @@
 # Ryan Tumbleson
-
+import PyQt5
+import zarr
 import numpy as np
 
 from mumax_helper_func import *
@@ -45,7 +46,7 @@ class VectorCuts(HasTraits):
     # Default values
     def _vector_field_src_default(self):
         self.keys = list(self.data.keys())
-        return mlab.pipeline.vector_field(self.data[self.keys[0]][0].T, self.data[self.keys[0]][1].T,
+        return self.scene.mlab.pipeline.vector_field(self.data[self.keys[0]][0].T, self.data[self.keys[0]][1].T,
                                           self.data[self.keys[0]][2].T, scalars=self.data[self.keys[0]][2].T)
 
     def make_cut(self, axis):
@@ -87,24 +88,18 @@ class VectorCuts(HasTraits):
 
     @on_trait_change('X, Y, Z, camX, camY, camZ')
     def update_plot(self):
-        self.scene.disable_render = True
         self.plotx.implicit_plane.plane.origin = (self.X, self.camY, 0)
         self.ploty.implicit_plane.plane.origin = (self.camX, self.Y, 0)
         self.plotz.implicit_plane.plane.origin = (self.camX, self.camY, self.Z)
 
         self.scene.mlab.view(focalpoint=(self.camX, self.camY, 0))
-        self.scene.disable_render = False
 
     @on_trait_change('t')
     def update_time(self):
-        self.scene.disable_render = True
+        # Only need to update one plot since they share the same data source
         self.plotx.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
                                          w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
-        self.ploty.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
-                                         w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
-        self.plotz.mlab_source.trait_set(u=self.data[self.keys[self.t]][0].T, v=self.data[self.keys[self.t]][1].T,
-                                         w=self.data[self.keys[self.t]][2].T, scalars=self.data[self.keys[self.t]][2].T)
-        self.scene.disable_render = False
+
 
     @on_trait_change('resetCam')
     def reset_camera(self):
@@ -130,7 +125,6 @@ class VectorCuts(HasTraits):
         self.scene.mlab.view(focalpoint=(256, 256, 0))
         self.scene.mlab.orientation_axes()
 
-
     view = View(HSplit(
         Group(
             Item('scene', editor=SceneEditor(scene_class=MayaviScene),
@@ -150,9 +144,11 @@ class VectorCuts(HasTraits):
     )
 
 if __name__ == '__main__':
+    ETS_TOOLKIT = PyQt5
     path = 'G:\\My Drive\\Steps\\steps10Oe.out\\'
+
     dataDict = load_npy_data(path)
-    dataTable = read_mumax3_table(path + 'table.txt')
+    #dataTable = read_mumax3_table(path + 'table.txt')
     print('Done!')
 
     vc = VectorCuts(data=dataDict)
