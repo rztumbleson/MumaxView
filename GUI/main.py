@@ -112,6 +112,7 @@ class VectorCuts(HasTraits):
         self.camY = 256
 
     def make_all_plots_nice(self):
+        #speed up code slightly
         self.scene.scene.anti_aliasing_frames = 0
         # remove large border around cut plane
         self.plotx.implicit_plane.widget.enabled = False
