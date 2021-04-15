@@ -31,8 +31,8 @@ class VectorCuts(HasTraits):
     Y = Range(0, 'dim_y', 'dim_y/2', mode='slider')
     Z = Range(0, 'dim_z', 'dim_z/2', mode='slider')
     t = Range(0, 'time_steps', 0, mode='slider')
-    camX = Range(-1000, 1000, 256, mode='slider')
-    camY = Range(-1000, 1000, 256, mode='slider')
+    camX = Range(-1000, 'dim_x', 'dim_x/2', mode='slider')
+    camY = Range(-1000, 'dim_y', 'dim_y/2', mode='slider')
     resetCam = Button(label='Reset Camera')
 
     # modules
@@ -127,7 +127,7 @@ class VectorCuts(HasTraits):
         self.scene.scene.background = (0, 0, 0)
 
         # set the default camera view
-        self.scene.mlab.view(focalpoint=(256, 256, 0))
+        self.scene.mlab.view(focalpoint=(self.camX, self.camY, 0))
         self.scene.mlab.orientation_axes()
 
     view = View(HSplit(
@@ -151,6 +151,6 @@ class VectorCuts(HasTraits):
 
 if __name__ == '__main__':
     ETS_TOOLKIT = PyQt5
-    path = 'G:\\My Drive\\Mumax\\Steps\\Jianheng code\\Step_1019.out\\'
+    path = 'G:\\My Drive\\Mumax\\FeGd\\5pcX_300K-3nsRelax.out\\'
     vc = VectorCuts(path=path)
     vc.configure_traits()
