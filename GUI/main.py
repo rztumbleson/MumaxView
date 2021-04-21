@@ -1,5 +1,4 @@
 # Ryan Tumbleson
-import PyQt5
 import numpy as np
 import glob
 
@@ -174,7 +173,6 @@ class VectorCuts(HasTraits):
 
 
 if __name__ == '__main__':
-    path = 'G:\\My Drive\\Mumax\\Steps\\steps10Oe.out\\' #100,000kB
-    #path = 'G:\\My Drive\\Mumax\\FeGd\\5pcX_300K-5nsRelax60nmThick.out\\' #12,000kB
+    path = '.\\test data\\' #100,000kB
     vc = VectorCuts(path=path)
     vc.configure_traits()
