@@ -46,3 +46,11 @@ def read_mumax3_table(filename):
     table = read_table(filename)
     table.columns = ' '.join(table.columns).split()[1::2]
     return table
+
+
+def convert_ovf_to_numpy(outputdir):
+    from subprocess import run, PIPE, STDOUT
+
+    p = run(['mumax3-convert', '-numpy', outputdir+'/*.ovf'], stdout=PIPE, stderr=STDOUT)
+    if p.returncode != 0:
+        print(p.stdout.decode('UTF-8'))

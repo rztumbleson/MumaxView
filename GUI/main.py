@@ -3,18 +3,21 @@ import numpy as np
 import glob
 
 from traits.api import HasTraits, Range, String, Instance, Button, \
-    on_trait_change, Property, cached_property
+    on_trait_change, Property, cached_property, Directory
 from traitsui.api import View, Item, Group, HSplit, VSplit, DefaultOverride
+
 
 from mayavi import mlab
 from mayavi.core.api import PipelineBase, Source
 from mayavi.core.ui.api import MayaviScene, SceneEditor, \
     MlabSceneModel
 
+from mumax_helper_func import convert_ovf_to_numpy
+
 
 class VectorCuts(HasTraits):
     path = String()
-
+    dir = Directory()
     time_steps = Property(depends_on='path')
     dim_x = Property(depends_on='path')
     dim_y = Property(depends_on='path')
@@ -36,62 +39,56 @@ class VectorCuts(HasTraits):
     resetCam = Button(label='Reset Camera')
 
     # modules
-    plotx = Instance(PipelineBase)
-    ploty = Instance(PipelineBase)
-    plotz = Instance(PipelineBase)
+    plot_x = Instance(PipelineBase)
+    plot_y = Instance(PipelineBase)
+    plot_z = Instance(PipelineBase)
 
     # data source
     vector_field_src = Instance(Source)
 
-    # Default values
-    def _vector_field_src_default(self):
-        npy_data = np.load(self.path + 'm' + '%06d' % self.t + '.npy')
-        return self.scene.mlab.pipeline.vector_field(npy_data[0].T, npy_data[1].T,
-                                                     npy_data[2].T, scalars=npy_data[2].T)
-
     def make_cut(self, axis):
         vcp = mlab.pipeline.vector_cut_plane(self.vector_field_src,
-                                             mask_points=1,
                                              scale_factor=1,
                                              plane_orientation='%s_axes' % axis)
         return vcp
 
-    def _plotx_default(self):
-        return self.make_cut('x')
-
-    def _ploty_default(self):
-        return self.make_cut('y')
-
-    def _plotz_default(self):
-        return self.make_cut('z')
-
     # Property implementations:
     @cached_property
     def _get_time_steps(self):
-        return len([np_name for np_name in glob.glob(path + '*.npy')]) - 1
+        if self.path == '':
+            return 1
+        return len([np_name for np_name in glob.glob(self.path + '*.npy')]) - 1
 
     @cached_property
     def _get_dim_x(self):
-        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy'))[3]
+        if self.path == '':
+            return 1
+        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy', 'r'))[3]
 
     @cached_property
     def _get_dim_y(self):
-        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy'))[2]
+        if self.path == '':
+            return 1
+        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy', 'r'))[2]
 
     @cached_property
     def _get_dim_z(self):
-        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy'))[1]
+        if self.path == '':
+            return 1
+        return np.shape(np.load(self.path + 'm' + '%06d' % self.t + '.npy', 'r'))[1]
 
     @on_trait_change('scene.activated')
     def display_scene(self):
-        self.make_all_plots_nice()
+        # set the background to black
+        self.scene.scene.background = (0, 0, 0)
+        self.scene.mlab.view()
 
     @on_trait_change('X, Y, Z')
     def update_plot(self):
         self.scene.disable_render = True
-        self.plotx.implicit_plane.plane.origin = (self.X, 0, 0)
-        self.ploty.implicit_plane.plane.origin = (0, self.Y, 0)
-        self.plotz.implicit_plane.plane.origin = (0, 0, self.Z)
+        self.plot_x.implicit_plane.plane.origin = (self.X, 0, 0)
+        self.plot_y.implicit_plane.plane.origin = (0, self.Y, 0)
+        self.plot_z.implicit_plane.plane.origin = (0, 0, self.Z)
         self.scene.disable_render = False
 
     @on_trait_change('camX, camY')
@@ -101,9 +98,11 @@ class VectorCuts(HasTraits):
     @on_trait_change('t')
     def update_time(self):
         self.scene.disable_render = True
-        npy_data = np.load(self.path + 'm' + '%06d' % self.t + '.npy')
-        self.vector_field_src.mlab_source.trait_set(u=npy_data[0].T, v=npy_data[1].T,
-                                                    w=npy_data[2].T, scalars=npy_data[2].T)
+        npy_data = np.load(self.path + 'm' + '%06d' % self.t + '.npy', 'r')
+        u = npy_data[0].T
+        v = npy_data[1].T
+        w = npy_data[2].T
+        self.vector_field_src.mlab_source.trait_set(u=u, v=v, w=w, scalars=w)
         self.scene.disable_render = False
 
     @on_trait_change('resetCam')
@@ -126,24 +125,58 @@ class VectorCuts(HasTraits):
     def button_y_pos(self):
         self.scene.mlab.move(0, 0, -1 * self.cam_slider)
 
+    @on_trait_change('dir')
+    def load_new_data(self):
+        self.scene.disable_render = True
+        if self.vector_field_src is not None:
+            self.plot_x.actor.actor.visibility = False
+            self.plot_y.actor.actor.visibility = False
+            self.plot_z.actor.actor.visibility = False
+
+            self.vector_field_src = None
+            self.plot_x = None
+            self.plot_y = None
+            self.plot_z = None
+
+        new_path = self.dir + '/'
+        new_t = 0
+        convert_ovf_to_numpy(new_path)
+
+        npy_data = np.load(new_path + 'm' + '%06d' % new_t + '.npy', 'r')
+        u = npy_data[0].T
+        v = npy_data[1].T
+        w = npy_data[2].T
+        self.vector_field_src = self.scene.mlab.pipeline.vector_field(u, v, w, scalars = w)
+        self.plot_x = self.make_cut('x')
+        self.plot_y = self.make_cut('y')
+        self.plot_z = self.make_cut('z')
+
+        self.path = new_path
+        self.t = new_t
+        self.make_all_plots_nice()
+        self.scene.disable_render = False
+
     def make_all_plots_nice(self):
         # speed up code slightly
         self.scene.scene.anti_aliasing_frames = 0
         # remove large border around cut plane
-        self.plotx.implicit_plane.widget.enabled = False
-        self.ploty.implicit_plane.widget.enabled = False
-        self.plotz.implicit_plane.widget.enabled = False
+        self.plot_x.implicit_plane.widget.enabled = False
+        self.plot_y.implicit_plane.widget.enabled = False
+        self.plot_z.implicit_plane.widget.enabled = False
 
         # add color to plots
-        self.plotx.glyph.color_mode = 'color_by_scalar'
-        self.ploty.glyph.color_mode = 'color_by_scalar'
-        self.plotz.glyph.color_mode = 'color_by_scalar'
+        self.plot_x.glyph.color_mode = 'color_by_scalar'
+        self.plot_y.glyph.color_mode = 'color_by_scalar'
+        self.plot_z.glyph.color_mode = 'color_by_scalar'
 
         # set the background to black
         self.scene.scene.background = (0, 0, 0)
 
         # set the default camera view
-        self.scene.mlab.view(focalpoint=(self.dim_x/2, self.dim_y/2, 0))
+        self.scene.mlab.view(focalpoint=(self.dim_x / 2, self.dim_y / 2, 0))
+        self.X = self.dim_x/2
+        self.Y = self.dim_y/2
+        self.Z = self.dim_z/2
         self.scene.mlab.orientation_axes()
 
     view = View(HSplit(
@@ -152,6 +185,7 @@ class VectorCuts(HasTraits):
                  height=700, width=1200, show_label=False)),
         Group(VSplit(
             Group(
+                Item('dir', show_label=False),
                 Item('X'),
                 Item('Y'),
                 Item('Z'),
@@ -173,6 +207,5 @@ class VectorCuts(HasTraits):
 
 
 if __name__ == '__main__':
-    path = '.\\test data\\' #100,000kB
-    vc = VectorCuts(path=path)
+    vc = VectorCuts()
     vc.configure_traits()
